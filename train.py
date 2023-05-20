@@ -30,12 +30,19 @@ maskPathsTest = sorted(list(paths.list_files(config.MASK_TEST_DATASET_PATH)))
 transforms = transforms.Compose([
 	transforms.ToTensor()])
 
+# partition the data into training and testing splits using 85% of
+# the data for training and the remaining 15% for testing
+split = train_test_split(imagePathsTrain, maskPathsTrain,
+	test_size=config.TEST_SPLIT, random_state=42)
+# unpack the data split
+(trainImages, testImages) = split[:2]
+(trainMasks, testMasks) = split[2:]
 
 # create the train and test datasets
-trainDS = dataset.SegmentationDataset(imagePaths=imagePathsTrain, maskPaths=maskPathsTrain,
+trainDS = dataset.SegmentationDataset(imagePaths=trainImages, maskPaths=trainMasks,
 	transforms=transforms)
 
-testDS = dataset.SegmentationDataset(imagePaths=imagePathsTest, maskPaths=maskPathsTest,
+testDS = dataset.SegmentationDataset(imagePaths=testImages, maskPaths=testMasks,
     transforms=transforms)
 
 print(f"[INFO] found {len(trainDS)} examples in the training set...")
