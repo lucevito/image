@@ -24,16 +24,17 @@ PIN_MEMORY = True if DEVICE == "cuda" else False
 #NUM_CHANNELS = 1
 #NUM_CLASSES = 1
 #NUM_LEVELS = 3
-
+# define the test split
+TEST_SPLIT = 0.15
 # initialize learning rate
 #Learning rate controls how quickly or slowly a neural network model learns a problem
 INIT_LR = 0.001
 
 #One epoch leads to underfitting of the curve in the graph
-NUM_EPOCHS = 50
+NUM_EPOCHS = 100
 
 #The batch size defines the number of samples that will be propagated through the network.
-BATCH_SIZE = 10
+BATCH_SIZE = 5
 
 # define the input image dimensions
 INPUT_IMAGE_WIDTH = 32

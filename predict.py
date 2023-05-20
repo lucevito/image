@@ -1,24 +1,24 @@
-import numpy as np
-import matplotlib.pyplot as plt
-import torch
-from sklearn.metrics import confusion_matrix
 
 from model import config
-from train import unet
-
+import torch
 
 import os
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
 
+from model.model import UNet
+
+
 def predict_pixels(model, images_path, masks_path):
-    # Preparazione dei dati di test
+    torch.save(model.state_dict(), "modello.pt")
+
     image_files = sorted(os.listdir(images_path))
     mask_files = sorted(os.listdir(masks_path))
 
     X_test = []
     y_test = []
+    y_pred = []
 
     for image_file, mask_file in zip(image_files, mask_files):
         image_path = os.path.join(images_path, image_file)
@@ -38,33 +38,29 @@ def predict_pixels(model, images_path, masks_path):
         # function, and convert the result to a NumPy array
         predMask = model(image)
         predMask = torch.sigmoid(predMask)
-        predMask = predMask.cpu().numpy()
-        # filter out the weak predictions and convert them to integers
         predMask = (predMask > config.THRESHOLD) * 32
-        predMask = predMask.astype(np.uint8)
+        y_pred.append(predMask)
 
     X_test = np.array(X_test)
     y_test = np.array(y_test)
-
-
-    # Esecuzione della predizione sui dati di test
-    #y_pred = model(X_test)
+    y_pred = np.stack(y_pred, axis=0)
 
     # Calcolo della matrice di confusione
     confusion_mat = confusion_matrix(y_test.flatten(), y_pred.flatten())
+    print(confusion_mat)
 
     # Plot dei pixel predetti per ogni immagine
     fig, axes = plt.subplots(nrows=len(image_files), ncols=2, figsize=(10, 2*len(image_files)))
-    for i in range(len(image_files)):
+    for i in range(1): #(len(image_files)):
         image = X_test[i]
         true_mask = y_test[i]
         pred_mask = y_pred[i]
 
-        axes[i, 0].imshow(image[..., 0:3])  # Visualizza solo i primi 3 canali dell'immagine
+        axes[i, 0].imshow(image[..., 0:1])  # Visualizza solo i primi 3 canali dell'immagine
         axes[i, 0].axis('off')
         axes[i, 0].set_title('True Mask')
 
-        axes[i, 1].imshow(pred_mask[..., 0:3])  # Visualizza solo i primi 3 canali della maschera predetta
+        axes[i, 1].imshow(pred_mask.squeeze()[..., 0:1])  # Visualizza solo i primi 3 canali della maschera predetta
         axes[i, 1].axis('off')
         axes[i, 1].set_title('Predicted Mask')
 
@@ -73,4 +69,19 @@ def predict_pixels(model, images_path, masks_path):
 
     return confusion_mat
 
-predict_pixels(unet,config.IMAGE_TEST_DATASET_PATH,config.MASK_TEST_DATASET_PATH)
+model_file = "modello.pt"  # Percorso del file del modello
+
+# Verifica se il file esiste
+if os.path.exists(model_file):
+    # Crea un'istanza del modello UNet
+    unet = UNet()
+
+    # Carica i pesi del modello dal file
+    unet.load_state_dict(torch.load(model_file))
+    unet.eval()  # Imposta il modello in modalità di valutazione
+else:
+    print("Il file del modello non esiste.")
+    from train import unet
+
+
+predict_pixels(unet, config.IMAGE_TEST_DATASET_PATH, config.MASK_TEST_DATASET_PATH)
