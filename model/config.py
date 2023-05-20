@@ -30,10 +30,10 @@ PIN_MEMORY = True if DEVICE == "cuda" else False
 INIT_LR = 0.001
 
 #One epoch leads to underfitting of the curve in the graph
-NUM_EPOCHS = 40
+NUM_EPOCHS = 50
 
 #The batch size defines the number of samples that will be propagated through the network.
-BATCH_SIZE = 20
+BATCH_SIZE = 10
 
 # define the input image dimensions
 INPUT_IMAGE_WIDTH = 32

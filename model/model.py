@@ -1,3 +1,5 @@
+import numpy as np
+
 import model.config as config
 import model.dataset as dataset
 from torch.nn import ConvTranspose2d
@@ -9,6 +11,7 @@ from torch.nn import ReLU
 from torchvision.transforms import CenterCrop
 from torch.nn import functional as F
 import torch
+import tensorflow as tf
 
 class Block(Module):
 	def __init__(self, inChannels, outChannels):
@@ -20,7 +23,7 @@ class Block(Module):
 	def forward(self, x):
 		# apply CONV => RELU => CONV block to the inputs and return it
 		return self.conv2(self.relu(self.conv1(x)))
-	
+
 class Encoder(Module):
 	def __init__(self, channels=(32, 64, 128,256)):
 		super().__init__()
@@ -113,7 +116,20 @@ class UNet(Module):
 		# return the segmentation map
 		return map
 
-import cv2
+"""
+	def predict(self, images):
+		# Esegue la predizione delle maschere per le immagini di input
 
+		# Normalizza le immagini di input
+		images = images / 32.0
 
+		# Esegue la predizione
+		masks = self.model.predict(images)
 
+		# Applica una soglia per ottenere maschere binarie
+		threshold = 0.5
+		masks = (masks > threshold).astype(np.uint8)
+
+		return masks
+
+"""
