@@ -1,5 +1,3 @@
-
-
 import torch
 import os
 
@@ -21,27 +19,27 @@ PIN_MEMORY = True if DEVICE == "cuda" else False
 
 # define the number of channels in the input, number of classes,
 # and number of levels in the U-Net model
-#NUM_CHANNELS = 1
-#NUM_CLASSES = 1
-#NUM_LEVELS = 3
+# NUM_CHANNELS = 1
+NUM_CLASSES = 10
+# NUM_LEVELS = 3
 # define the test split
 TEST_SPLIT = 0.15
-# initialize learning rate
-#Learning rate controls how quickly or slowly a neural network model learns a problem
+
+# Learning rate controls how quickly or slowly a neural network model learns a problem
 INIT_LR = 0.001
 
-#One epoch leads to underfitting of the curve in the graph
-NUM_EPOCHS = 100
+# One epoch leads to underfitting of the curve in the graph
+NUM_EPOCHS = 150
 
-#The batch size defines the number of samples that will be propagated through the network.
-BATCH_SIZE = 5
+# The batch size defines the number of samples that will be propagated through the network.
+BATCH_SIZE = 4
 
 # define the input image dimensions
 INPUT_IMAGE_WIDTH = 32
 INPUT_IMAGE_HEIGHT = 32
 
 # define threshold to filter weak predictions(soglia)
-THRESHOLD = 0.5
+THRESHOLD = 0.1
 
 # define the path to the base output directory
 BASE_OUTPUT = "output"
@@ -51,4 +49,3 @@ BASE_OUTPUT = "output"
 MODEL_PATH = os.path.join(BASE_OUTPUT, "unet.pth")
 PLOT_PATH = os.path.sep.join([BASE_OUTPUT, "plot.png"])
 TEST_PATHS = os.path.sep.join([BASE_OUTPUT, "test_paths.txt"])
-

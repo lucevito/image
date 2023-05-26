@@ -1,6 +1,3 @@
-import model.config as config
-import model.model as model
-
 from torch.utils.data import Dataset
 import numpy as np
 
