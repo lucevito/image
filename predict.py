@@ -1,5 +1,3 @@
-import glob
-from PIL import Image
 from config import *
 from model import *
 

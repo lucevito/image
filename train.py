@@ -1,7 +1,5 @@
-import glob
 from model import *
 from config import *
-from PIL import Image
 
 if os.path.exists('modello7.h5'):
     model = tf.keras.models.load_model('modello7.h5')

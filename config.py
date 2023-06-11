@@ -1,5 +1,7 @@
 import os
 import uuid
+import glob
+from PIL import Image
 from matplotlib import pyplot as plt
 
 train_images_path = 'Immagini_satellitari/Train/images'
