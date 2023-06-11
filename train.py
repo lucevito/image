@@ -1,146 +1,47 @@
-import model.config as config
-import model.model as model
-import model.dataset as dataset
-from torch.nn import BCEWithLogitsLoss
-from torch.optim import Adam
-from torch.utils.data import DataLoader
-from sklearn.model_selection import train_test_split
-from torchvision import transforms
-from imutils import paths
-from tqdm import tqdm
-import torch
-import time
 import os
+import numpy as np
+import tensorflow as tf
+from model import *
+from config import *
 
-# load the image and mask filepaths in a sorted manner
-imagePathsTrain = sorted(list(paths.list_files(config.IMAGE_TRAIN_DATASET_PATH)))
-maskPathsTrain = sorted(list(paths.list_files(config.MASK_TRAIN_DATASET_PATH)))
+if os.path.exists('modello7.h5'):
+    model = tf.keras.models.load_model('modello7.h5')
+else:
+    encoder_filters = [16, 32, 64, 128]
+    decoder_filters = encoder_filters[::-1]
+    kernel = 3
+    input_shape = (256, 256, 10)
+    num_classes = 2
 
-# define transformations
-transforms = transforms.Compose([
-    transforms.ToTensor()])
+    model = create_unet(input_shape, num_classes, kernel, encoder_filters, decoder_filters)
+    model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+    # metrics_callback = MetricsCallback(train_images_resized, train_masks_resized, test_images_resized, test_masks_resized)
+    # training_callback = TrainingCallback(validation_data=(train_images_resized, train_masks_resized))
+    # , callbacks=[metrics_callback]
+    model.fit(train_images_resized, train_masks_resized, epochs=2, batch_size=5)
+    model.save('modello7.h5')
 
-# partition the data into training and testing splits using 85% of
-# the data for training and the remaining 15% for testing
-split = train_test_split(imagePathsTrain, maskPathsTrain,
-                         test_size=config.TEST_SPLIT, random_state=42)
-# unpack the data split
-(trainImages, testImages) = split[:2]
-(trainMasks, testMasks) = split[2:]
+test_loss, test_accuracy = model.evaluate(test_images_resized, test_masks_resized)
+print("Test Loss:", test_loss)
+print("Test Accuracy:", test_accuracy)
 
-# create the train and test datasets
-trainDS = dataset.SegmentationDataset(imagePaths=trainImages, maskPaths=trainMasks,
-                                      transforms=transforms)
+predicted_masks = model.predict(test_images_resized)
+new_size = (32, 32)
+predicted_masks = tf.image.resize(predicted_masks, new_size, method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+predicted_masks = np.argmax(predicted_masks, axis=-1)
 
-testDS = dataset.SegmentationDataset(imagePaths=testImages, maskPaths=testMasks,
-                                     transforms=transforms)
+true_masks = test_masks.flatten()
+pred_masks = predicted_masks.flatten()
 
-print(f"[INFO] found {len(trainDS)} examples in the training set...")
-print(f"[INFO] found {len(testDS)} examples in the test set...")
+print("============================================================================")
+print("Prediction : \n")
+print("Evaluation Metrics:")
+print("Precision:", precision_score(true_masks, pred_masks, zero_division=0))
+print("Recall:", recall_score(true_masks, pred_masks))
+print("F1-score:", f1_score(true_masks, pred_masks))
+print("Mean IoU:", jaccard_score(true_masks, pred_masks, average='macro'))
+print("Confusion Matrix:\n", confusion_matrix(true_masks, pred_masks))
 
-# Create a custom sampler to balance the dataset
-class MaskBalanceSampler(torch.utils.data.sampler.Sampler):
-    def __init__(self, dataset):
-        self.dataset = dataset
-
-    def __iter__(self):
-        mask_indices = [i for i, (_, mask) in enumerate(self.dataset) if torch.all(mask == 0)]
-        non_mask_indices = [i for i, (_, mask) in enumerate(self.dataset) if not torch.all(mask == 0)]
-        num_samples = min(len(mask_indices), len(non_mask_indices))
-
-        indices = mask_indices[:num_samples] + non_mask_indices[:num_samples]
-        indices = torch.randperm(len(indices)).tolist()
-        return iter(indices)
-
-    def __len__(self):
-        return len(self.dataset)
-
-# create the training and test data loaders with balanced sampling
-trainLoader = DataLoader(trainDS, sampler=MaskBalanceSampler(trainDS),
-                         batch_size=config.BATCH_SIZE, pin_memory=config.PIN_MEMORY,
-                         num_workers=os.cpu_count())
-testLoader = DataLoader(testDS, shuffle=False,
-                        batch_size=config.BATCH_SIZE, pin_memory=config.PIN_MEMORY,
-                        num_workers=os.cpu_count())
-
-# initialize our UNet model
-unet = model.UNet().to(config.DEVICE)
-
-# initialize loss function and optimizer
-lossFunc = BCEWithLogitsLoss()
-opt = Adam(unet.parameters(), lr=config.INIT_LR)
-
-# calculate steps per epoch for training and test set
-trainSteps = len(trainDS) // config.BATCH_SIZE
-testSteps = len(testDS) // config.BATCH_SIZE
-
-# initialize a dictionary to store training history
-H = {"train_loss": [], "test_loss": []}
-
-# loop over epochs
-print("[INFO] training the network...")
-startTime = time.time()
-for e in tqdm(range(config.NUM_EPOCHS)):
-    # set the model in training mode
-    unet.train()
-    # initialize the total training and validation loss
-    totalTrainLoss = 0
-    totalTestLoss = 0
-
-    # loop over the training set
-    for (i, (x, y)) in enumerate(trainLoader):
-        # send the input to the device
-        (x, y) = (x.to(config.DEVICE), y.to(config.DEVICE))
-        # perform a forward pass and calculate the training loss
-        pred = unet(x)
-        loss = lossFunc(pred, y)
-        """
-        if torch.all(y == 0):
-            loss = lossFunc(pred, y) * weight
-        else:
-            loss = lossFunc(pred, y)
-
-        """
-        # first, zero out any previously accumulated gradients, then
-        # perform backpropagation, and then update model parameters
-        opt.zero_grad()
-        loss.backward()
-        opt.step()
-        # add the loss to the total training loss so far
-        totalTrainLoss += loss
-
-    # switch off autograd
-    with torch.no_grad():
-        # set the model in evaluation mode
-        unet.eval()
-        # loop over the validation set
-        for (x, y) in testLoader:
-            # send the input to the device
-            (x, y) = (x.to(config.DEVICE), y.to(config.DEVICE))
-            # make the predictions and calculate the validation loss
-            pred = unet(x)
-            """
-            if torch.all(y == 0):
-                totalTestLoss += lossFunc(pred, y) * weight
-            else:
-                totalTestLoss += lossFunc(pred, y)
-
-            """
-            totalTestLoss += lossFunc(pred, y)
-
-    # calculate the average training and validation loss
-    avgTrainLoss = totalTrainLoss / trainSteps
-    avgTestLoss = totalTestLoss / testSteps
-
-    # update our training history
-    H["train_loss"].append(avgTrainLoss.cpu().detach().numpy())
-    H["test_loss"].append(avgTestLoss.cpu().detach().numpy())
-    # print the model training and validation information
-    print("[INFO] EPOCH: {}/{}".format(e + 1, config.NUM_EPOCHS))
-    print("Train loss: {:.6f}, Test loss: {:.4f}".format(
-        avgTrainLoss, avgTestLoss))
-
-# display the total time needed to perform the training
-endTime = time.time()
-print("[INFO] total time taken to train the model: {:.2f}s".format(
-    endTime - startTime))
+output_folder = 'output/'
+os.makedirs(output_folder, exist_ok=True)
+visualize_pixel_plots(test_images, test_masks, predicted_masks, output_folder)
