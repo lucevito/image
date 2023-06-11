@@ -1,38 +1,15 @@
-import glob
 import os
 import uuid
-import numpy as np
-from PIL import Image
 from matplotlib import pyplot as plt
-import tensorflow as tf
 
 train_images_path = 'Immagini_satellitari/Train/images'
 train_masks_path = 'Immagini_satellitari/Train/masks'
 test_images_path = 'Immagini_satellitari/Test/images'
 test_masks_path = 'Immagini_satellitari/Test/masks'
 
-train_images = np.array([np.load(file) for file in glob.glob(train_images_path + '/*.npy')])
-train_masks = np.array([np.load(file) for file in glob.glob(train_masks_path + '/*.npy')])
-test_images = np.array([np.load(file) for file in glob.glob(test_images_path + '/*.npy')])
-test_masks = np.array([np.load(file) for file in glob.glob(test_masks_path + '/*.npy')])
-
-new_size = (256, 256)
-train_images_resized = tf.image.resize(train_images, new_size)
-train_masks_resized = np.zeros((train_masks.shape[0], *new_size))
-test_images_resized = tf.image.resize(test_images, new_size)
-test_masks_resized = np.zeros((test_masks.shape[0], *new_size))
-for i in range(train_masks.shape[0]):
-    mask = Image.fromarray(train_masks[i])
-    mask_enlarged = mask.resize(new_size)
-    train_masks_resized[i] = np.array(mask_enlarged)
-for i in range(test_masks.shape[0]):
-    mask = Image.fromarray(test_masks[i])
-    mask_enlarged = mask.resize(new_size)
-    test_masks_resized[i] = np.array(mask_enlarged)
-
 
 def visualize_pixel_plots(image, mask, pred, output_folder):
-    for i in range(len(test_images)):
+    for i in range(len(image)):
         fig, axs = plt.subplots(3, 4, figsize=(15, 5))
         axs[0][0].imshow(image[i][:, :, 0])
         axs[0][0].set_title('Image channel 1')
@@ -68,7 +45,7 @@ def visualize_pixel_plots(image, mask, pred, output_folder):
 
 
 def visualize(image, mask, output_folder):
-    for i in range(len(test_images)):
+    for i in range(len(image)):
         fig, axs = plt.subplots(3, 4, figsize=(15, 5))
         axs[0][0].imshow(image[i][:, :, 0])
         axs[0][0].set_title('Image channel 1')
@@ -100,5 +77,5 @@ def visualize(image, mask, output_folder):
         plt.close(fig)
 
 
-os.makedirs('output/', exist_ok=True)
-visualize(train_images_resized, train_masks_resized, 'output/')
+#os.makedirs('output/', exist_ok=True)
+#visualize(train_images_resized, train_masks_resized, 'output/')
