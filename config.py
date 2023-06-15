@@ -9,10 +9,10 @@ train_masks_path = 'Immagini_satellitari/Train/masks'
 test_images_path = 'Immagini_satellitari/Test/images'
 test_masks_path = 'Immagini_satellitari/Test/masks'
 
-encoder_filters = [32, 64, 128, 256]
+encoder_filters = [64, 128, 256, 512]
 decoder_filters = encoder_filters[::-1]
 kernel = 3
-new_size = (32, 32)
+new_size = (256, 256)
 canaleI = 1
 canaleF = 10
 input_shape = (new_size[0], new_size[1], 1)

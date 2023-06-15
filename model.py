@@ -3,7 +3,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, jacca
 import tensorflow as tf
 
 def weighted_loss(y_true, y_pred):
-    weights = tf.where(tf.equal(y_true, 0), 0.2, 1.0)  # Assegna peso 0.2 alle maschere nere e 1.0 alle maschere oggetto
+    weights = tf.where(tf.equal(y_true, 0), 0.2, 1.0)
     loss = tf.keras.losses.sparse_categorical_crossentropy(y_true, y_pred)
     weighted_loss = tf.reduce_mean(loss * weights)
     return weighted_loss
