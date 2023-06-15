@@ -1,16 +1,19 @@
 from model import *
 from config import *
+from sklearn.model_selection import train_test_split
 
 if os.path.exists('modello.h5'):
-    model = tf.keras.models.load_model('modello.h5')
+    with tf.keras.utils.custom_object_scope({'weighted_loss': weighted_loss}):
+        model = tf.keras.models.load_model('modello.h5')
 else:
     model = create_unet(input_shape, num_classes, kernel, encoder_filters, decoder_filters)
     model.compile(optimizer='adam', loss=weighted_loss, metrics=['accuracy'])
 
-num_parts = 20
-epoch = 400
+num_parts = 5
+epoch = 100
 batch_size = 10
 ripetizioni = 1
+
 for k in range(ripetizioni):
     for batch_idx in range(num_parts):
         start_idx = batch_idx * len(train_images_files) // num_parts
@@ -18,19 +21,33 @@ for k in range(ripetizioni):
 
         train_images_batch = np.array([np.load(file) for file in train_images_files[start_idx:end_idx]])
         train_masks_batch = np.array([np.load(file) for file in train_masks_files[start_idx:end_idx]])
-        train_images_batch = train_images_batch[:, :, :, :canaleI:canaleF]
+        train_images_batch = train_images_batch[:, :, :, canali_selezionati]
+        train_images, val_images, train_masks, val_masks = train_test_split(train_images_batch,
+                                                                            train_masks_batch,
+                                                                            test_size=0.2, random_state=42)
 
-        train_images_resized = tf.image.resize(train_images_batch, new_size)
-        train_masks_resized = np.zeros((train_masks_batch.shape[0], *new_size))
-        for i in range(train_masks_batch.shape[0]):
-            mask = Image.fromarray(train_masks_batch[i])
-            mask_enlarged = mask.resize(new_size)
-            train_masks_resized[i] = np.array(mask_enlarged)
+        train_images = tf.image.resize(train_images, new_size)
+        resized_dataset = []
+        for image in train_masks:
+            resized_image = resize_image(image,new_size)
+            resized_dataset.append(resized_image)
+        train_masks = np.array(resized_dataset)
 
-        model.fit(train_images_resized, train_masks_resized, epochs=epoch, batch_size=batch_size)
+
+        val_images = tf.image.resize(val_images, new_size)
+        resized_dataset = []
+        for image in val_masks:
+            resized_image = resize_image(image,new_size)
+            resized_dataset.append(resized_image)
+        val_masks = np.array(resized_dataset)
+
+        #visualize(train_images,train_masks)
+        callback = TrainingCallback(val_images, val_masks)
+        model.fit(train_images, train_masks, epochs=epoch,
+                  batch_size=batch_size, callbacks=[callback])
+
+
         print("Parte : ", batch_idx + 1, " finita su :", num_parts)
         print("==============================================")
 
     model.save('modello.h5')
-
-
