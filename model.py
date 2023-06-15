@@ -2,6 +2,11 @@ import numpy as np
 from sklearn.metrics import accuracy_score, precision_score, recall_score, jaccard_score, confusion_matrix, f1_score
 import tensorflow as tf
 
+def weighted_loss(y_true, y_pred):
+    weights = tf.where(tf.equal(y_true, 0), 0.2, 1.0)  # Assegna peso 0.2 alle maschere nere e 1.0 alle maschere oggetto
+    loss = tf.keras.losses.sparse_categorical_crossentropy(y_true, y_pred)
+    weighted_loss = tf.reduce_mean(loss * weights)
+    return weighted_loss
 
 def create_unet(input_shape, num_classes, kernel, encoder_filters, decoder_filters):
     inputs = tf.keras.Input(input_shape)
@@ -17,12 +22,11 @@ def create_unet(input_shape, num_classes, kernel, encoder_filters, decoder_filte
         pooling_layers.append(pool)
         x = pool
 
-    # Bottleneck
-    bottleneck = tf.keras.layers.Conv2D(encoder_filters[-1], kernel, activation='relu', padding='same')(
-        pooling_layers[-1])
-    bottleneck = tf.keras.layers.Conv2D(encoder_filters[-1], kernel, activation='relu', padding='same')(bottleneck)
+    bottleneck = tf.keras.layers.Conv2D(encoder_filters[-1], kernel,
+                                        activation='relu', padding='same')(pooling_layers[-1])
+    bottleneck = tf.keras.layers.Conv2D(encoder_filters[-1], kernel,
+                                        activation='relu', padding='same')(bottleneck)
 
-    # Decoder
     for filters in reversed(decoder_filters):
         up = tf.keras.layers.UpSampling2D(size=(2, 2))(bottleneck)
         concat = tf.keras.layers.Concatenate()([up, conv_layers.pop()])
@@ -30,9 +34,7 @@ def create_unet(input_shape, num_classes, kernel, encoder_filters, decoder_filte
         conv = tf.keras.layers.Conv2D(filters, kernel, activation='relu', padding='same')(conv)
         bottleneck = conv
 
-    # Output
     outputs = tf.keras.layers.Conv2D(num_classes, 1, activation='sigmoid')(bottleneck)
-
     model = tf.keras.Model(inputs=inputs, outputs=outputs)
     return model
 
@@ -50,7 +52,6 @@ class TrainingCallback(tf.keras.callbacks.Callback):
 class MetricsCallback(tf.keras.callbacks.Callback):
     def __init__(self, train_images, train_masks, test_images, test_masks):
         super(MetricsCallback, self).__init__()
-
         self.train_images = train_images
         self.train_masks = train_masks
         self.test_images = test_images
@@ -90,5 +91,4 @@ class MetricsCallback(tf.keras.callbacks.Callback):
         print("Confusion Matrix:")
         print(confusion_matrix(true_masks, predicted_masks))
         print("============================================================================")
-
         return

@@ -9,8 +9,20 @@ train_masks_path = 'Immagini_satellitari/Train/masks'
 test_images_path = 'Immagini_satellitari/Test/images'
 test_masks_path = 'Immagini_satellitari/Test/masks'
 
+encoder_filters = [32, 64, 128, 256]
+decoder_filters = encoder_filters[::-1]
+kernel = 3
+new_size = (32, 32)
+canaleI = 1
+canaleF = 10
+input_shape = (new_size[0], new_size[1], 1)
+num_classes = 2
 
-def visualize_pixel_plots(image, mask, pred, output_folder):
+train_images_files = glob.glob(train_images_path + '/*.npy')
+train_masks_files = glob.glob(train_masks_path + '/*.npy')
+
+def visualize_pixel_plots(image, mask, pred, output_folder='output/'):
+    os.makedirs(output_folder, exist_ok=True)
     for i in range(len(image)):
         fig, axs = plt.subplots(3, 4, figsize=(15, 5))
         axs[0][0].imshow(image[i][:, :, 0])
@@ -46,7 +58,8 @@ def visualize_pixel_plots(image, mask, pred, output_folder):
         plt.close(fig)
 
 
-def visualize(image, mask, output_folder):
+def visualize(image, mask, output_folder='bigger/'):
+    os.makedirs(output_folder, exist_ok=True)
     for i in range(len(image)):
         fig, axs = plt.subplots(3, 4, figsize=(15, 5))
         axs[0][0].imshow(image[i][:, :, 0])
@@ -77,7 +90,3 @@ def visualize(image, mask, output_folder):
         filename = str(uuid.uuid4()) + '.png'
         plt.savefig(os.path.join(output_folder, filename))
         plt.close(fig)
-
-
-#os.makedirs('output/', exist_ok=True)
-#visualize(train_images_resized, train_masks_resized, 'output/')
