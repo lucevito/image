@@ -4,13 +4,13 @@ import tensorflow as tf
 
 
 def weighted_loss(y_true, y_pred):
-    weights = tf.where(tf.equal(y_true, 0), 1.0, 1.0)  # falso,vero pesi
+    weights = tf.where(tf.equal(y_true, 0), 1.0, 1.0)  # Pesi falsi,veri
     loss = tf.keras.losses.sparse_categorical_crossentropy(y_true, y_pred)
     weighted_loss = tf.reduce_mean(loss * weights)
     return weighted_loss
 
 
-def create_unet(input_shape, num_classes, kernel, encoder_filters, decoder_filters):
+def create_unet(input_shape, num_classes, kernel, pool_size, encoder_filters, decoder_filters):
     inputs = tf.keras.Input(input_shape)
     x = inputs
 
@@ -19,7 +19,7 @@ def create_unet(input_shape, num_classes, kernel, encoder_filters, decoder_filte
     for filters in encoder_filters:
         conv = tf.keras.layers.Conv2D(filters, kernel, activation='relu', padding='same')(x)
         conv = tf.keras.layers.Conv2D(filters, kernel, activation='relu', padding='same')(conv)
-        pool = tf.keras.layers.MaxPooling2D(pool_size=(2, 2))(conv)
+        pool = tf.keras.layers.MaxPooling2D(pool_size)(conv)
         conv_layers.append(conv)
         pooling_layers.append(pool)
         x = pool
@@ -30,7 +30,7 @@ def create_unet(input_shape, num_classes, kernel, encoder_filters, decoder_filte
                                         activation='relu', padding='same')(bottleneck)
 
     for filters in reversed(decoder_filters):
-        up = tf.keras.layers.UpSampling2D(size=(2, 2))(bottleneck)
+        up = tf.keras.layers.UpSampling2D(pool_size)(bottleneck)
         concat = tf.keras.layers.Concatenate()([up, conv_layers.pop()])
         conv = tf.keras.layers.Conv2D(filters, kernel, activation='relu', padding='same')(concat)
         conv = tf.keras.layers.Conv2D(filters, kernel, activation='relu', padding='same')(conv)

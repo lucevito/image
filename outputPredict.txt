@@ -1,0 +1,40 @@
+3/3 [==============================] - 1s 535ms/step
+============================================================================
+Prediction :
+
+Evaluation Metrics:
+Precision: 0.0
+Recall: 0.0
+F1-score: 0.0
+Mean IoU: 0.4902587890625
+Confusion Matrix:
+ [[1285184       0]
+ [  25536       0]]
+precision_attacchi:  0.0
+precision_normali:  0.990162964423954
+F1 attacchi: 0.0
+F1 normali: 0.990162964423954
+Macro F1: 0.495081482211977
+OA: 0.980517578125
+Parte :  1  finita su : 2
+==============================================
+3/3 [==============================] - 14s 7s/step
+============================================================================
+Prediction :
+
+Evaluation Metrics:
+Precision: 0.0
+Recall: 0.0
+F1-score: 0.0
+Mean IoU: 0.4929591049382716
+Confusion Matrix:
+ [[1308416       0]
+ [  18688       0]]
+precision_attacchi:  0.0
+precision_normali:  0.9929091792132103
+F1 attacchi: 0.0
+F1 normali: 0.9929091792132103
+Macro F1: 0.49645458960660516
+OA: 0.9859182098765432
+Parte :  2  finita su : 2
+==============================================

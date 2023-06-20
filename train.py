@@ -2,15 +2,22 @@ from model import *
 from config import *
 from sklearn.model_selection import train_test_split
 
-if os.path.exists('modello.h5'):
+train_images_path = 'Immagini_satellitari/Train/images'
+train_masks_path = 'Immagini_satellitari/Train/masks'
+
+train_images_files = glob.glob(train_images_path + '/*.npy')
+train_masks_files = glob.glob(train_masks_path + '/*.npy')
+
+modello = 'modello.h5'
+if os.path.exists(modello):
     with tf.keras.utils.custom_object_scope({'weighted_loss': weighted_loss}):
-        model = tf.keras.models.load_model('modello.h5')
+        model = tf.keras.models.load_model(modello)
 else:
-    model = create_unet(input_shape, num_classes, kernel, encoder_filters, decoder_filters)
+    model = create_unet(input_shape, num_classes, kernel,pool_size, encoder_filters, decoder_filters)
     model.compile(optimizer='adam', loss=weighted_loss, metrics=['accuracy'])
 
 num_parts = 5
-epoch = 100
+epoch = 150
 batch_size = 10
 ripetizioni = 1
 
@@ -33,7 +40,6 @@ for k in range(ripetizioni):
             resized_dataset.append(resized_image)
         train_masks = np.array(resized_dataset)
 
-
         val_images = tf.image.resize(val_images, new_size)
         resized_dataset = []
         for image in val_masks:
@@ -45,7 +51,6 @@ for k in range(ripetizioni):
         callback = TrainingCallback(val_images, val_masks)
         model.fit(train_images, train_masks, epochs=epoch,
                   batch_size=batch_size, callbacks=[callback])
-
 
         print("Parte : ", batch_idx + 1, " finita su :", num_parts)
         print("==============================================")

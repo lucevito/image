@@ -1,26 +1,20 @@
 import os
 import uuid
 import glob
+import numpy as np
 from PIL import Image
 from matplotlib import pyplot as plt
 
-train_images_path = 'Immagini_satellitari/Train/images'
-train_masks_path = 'Immagini_satellitari/Train/masks'
-test_images_path = 'Immagini_satellitari/Test/images'
-test_masks_path = 'Immagini_satellitari/Test/masks'
-
-encoder_filters = [32, 64, 128, 256]
+encoder_filters = [64, 128, 256, 512]
 decoder_filters = encoder_filters[::-1]
 kernel = 3
 num_classes = 2
+pool_size = (2, 2)
 
 new_size = (128, 128)
-canali_selezionati = [0,1,2,3,4,5,6,7,8,9]
+canali_selezionati = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 input_shape = (new_size[0], new_size[1], len(canali_selezionati))
 
-
-train_images_files = glob.glob(train_images_path + '/*.npy')
-train_masks_files = glob.glob(train_masks_path + '/*.npy')
 
 def visualize_pixel_plots(image, mask, pred, output_folder='output/'):
     os.makedirs(output_folder, exist_ok=True)
@@ -91,7 +85,9 @@ def visualize(image, mask, output_folder='bigger/'):
         filename = str(uuid.uuid4()) + '.png'
         plt.savefig(os.path.join(output_folder, filename))
         plt.close(fig)
-def resize_image(image,new_size):
+
+
+def resize_image(image, new_size):
     image = Image.fromarray(image, mode='L')
     resized_image = image.resize(new_size, Image.BILINEAR)
     resized_array = np.array(resized_image)
