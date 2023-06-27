@@ -1,6 +1,7 @@
 from model import *
 from config import *
 from sklearn.model_selection import train_test_split
+from keras import metrics
 
 train_images_path = 'Immagini_satellitari/Train/images'
 train_masks_path = 'Immagini_satellitari/Train/masks'
@@ -14,12 +15,19 @@ if os.path.exists(modello):
         model = tf.keras.models.load_model(modello)
 else:
     model = create_unet(input_shape, num_classes, kernel,pool_size, encoder_filters, decoder_filters)
-    model.compile(optimizer='adam', loss=weighted_loss, metrics=['accuracy'])
+    model.compile(optimizer='adam', loss=weighted_loss,
+                  metrics=['accuracy'])
 
-num_parts = 5
-epoch = 150
-batch_size = 10
+num_parts = 1
+epoch = 500
+batch_size = 100
 ripetizioni = 1
+
+early_stopping = tf.keras.callbacks.EarlyStopping(
+    monitor='loss',
+    patience=10,
+    restore_best_weights=True
+)
 
 for k in range(ripetizioni):
     for batch_idx in range(num_parts):
@@ -40,6 +48,7 @@ for k in range(ripetizioni):
             resized_dataset.append(resized_image)
         train_masks = np.array(resized_dataset)
 
+
         val_images = tf.image.resize(val_images, new_size)
         resized_dataset = []
         for image in val_masks:
@@ -50,9 +59,10 @@ for k in range(ripetizioni):
         #visualize(train_images,train_masks)
         callback = TrainingCallback(val_images, val_masks)
         model.fit(train_images, train_masks, epochs=epoch,
-                  batch_size=batch_size, callbacks=[callback])
+                  batch_size=batch_size, callbacks=[callback,early_stopping])
 
         print("Parte : ", batch_idx + 1, " finita su :", num_parts)
         print("==============================================")
 
     model.save('modello.h5')
+
