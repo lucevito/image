@@ -1,0 +1,145 @@
+PREMESSA
+I PESI NELL'OUTPUT sono sempre per 0 : 0.5 e con 1 : 0.5
+
+
+Ho leggermente corretto la funzione che dava i pesi alle maschere usando una versione piu chiara
+copiandola dalla documentazione sull'image segmentation di tensorflow
+il link è https://www.tensorflow.org/tutorials/images/segmentation?hl=it#optional_imbalanced_classes_and_class_weights
+
+La precedente:
+def add_sample_weights(label,weights):
+    class_weights = tf.constant(weights)
+    class_weights = class_weights / tf.reduce_sum(class_weights)
+    sample_weights = tf.gather(class_weights, indices=tf.cast(label[..., 0], tf.int32))
+    return sample_weights
+
+La Nuova Copiata:
+def add_sample_weights(label,weights):
+    # The weights for each class, with the constraint that:
+    #     sum(class_weights) == 1.0
+    class_weights = tf.constant(weights)
+    class_weights = class_weights / tf.reduce_sum(class_weights)
+    # Create an image of `sample_weights` by using the label at each pixel as an 
+    # index into the `class weights` .
+    sample_weights = tf.gather(class_weights, indices=tf.cast(label, tf.int32))
+    return sample_weights
+
+IL CODICE CHE NE FA USO E':
+train_masks_exp = tf.expand_dims(train_masks, axis=-1)
+model.fit(train_images, train_masks_exp, epochs=epoch, batch_size=batch_size,
+          callbacks=[early_stopping],sample_weight=add_sample_weights(train_masks_exp,weights),
+          validation_data=(val_images, val_masks))
+
+GLI SHAPE E LA MASCHERA:
+IL CODICE:
+print("===============================")
+print("la prima maschera")
+print(train_masks[0])
+print("SHAPE della prima maschera :")
+print(train_masks[0].shape)
+
+print("===============================")
+print("la prima maschera con l'espensione di una dimensione")
+print(train_masks_exp[0])
+print("SHAPE della prima maschera con l'espensione di una dimensione :")
+print(train_masks_exp[0].shape)
+
+print("===============================")
+print("PESI 0: 0.5 , 1: 0.5")
+print("la prima maschera Pesata")
+print(add_sample_weights(train_masks,weights)[0])
+print("SHAPE della prima maschera Pesata :")
+print(add_sample_weights(train_masks,weights)[0].shape)
+
+L'OUTPUT:
+===============================
+la prima maschera
+[[0 0 0 ... 0 0 0]
+ [0 0 0 ... 0 0 0]
+ [0 0 0 ... 0 0 0]
+ ...
+ [0 0 0 ... 0 0 0]
+ [0 0 0 ... 0 0 0]
+ [0 0 0 ... 0 0 0]]
+SHAPE della prima maschera :
+(32, 32)
+===============================
+la prima maschera con l'espensione di una dimensione
+tf.Tensor(
+[[[0]
+  [0]
+  [0]
+  ...
+  [0]
+  [0]
+  [0]]
+
+ [[0]
+  [0]
+  [0]
+  ...
+  [0]
+  [0]
+  [0]]
+
+ [[0]
+  [0]
+  [0]
+  ...
+  [0]
+  [0]
+  [0]]
+
+ ...
+
+ [[0]
+  [0]
+  [0]
+  ...
+  [0]
+  [0]
+  [0]]
+
+ [[0]
+  [0]
+  [0]
+  ...
+  [0]
+  [0]
+  [0]]
+
+ [[0]
+  [0]
+  [0]
+  ...
+  [0]
+  [0]
+  [0]]], shape=(32, 32, 1), dtype=uint8)
+SHAPE della prima maschera con l'espensione di una dimensione :
+(32, 32, 1)
+===============================
+PESI 0: 0.5 , 1: 0.5
+la prima maschera Pesata
+tf.Tensor(
+[[0.5 0.5 0.5 ... 0.5 0.5 0.5]
+ [0.5 0.5 0.5 ... 0.5 0.5 0.5]
+ [0.5 0.5 0.5 ... 0.5 0.5 0.5]
+ ...
+ [0.5 0.5 0.5 ... 0.5 0.5 0.5]
+ [0.5 0.5 0.5 ... 0.5 0.5 0.5]
+ [0.5 0.5 0.5 ... 0.5 0.5 0.5]], shape=(32, 32), dtype=float32)
+SHAPE della prima maschera Pesata :
+(32, 32)
+
+
+
+
+
+
+
+
+
+
+
+
+
