@@ -1,4 +1,5 @@
-
+from config import *
+from model import *
 from sklearn.model_selection import train_test_split
 from keras import metrics
 import matplotlib.pyplot as plt
