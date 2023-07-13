@@ -1,0 +1,64 @@
+dato il problema descritto nel file 2. ho provato ad eseguire il reshape nel modello:
+
+def create_unet(input_shape, num_classes, kernel, pool_size, encoder_filters, decoder_filters):
+    inputs = tf.keras.Input(input_shape)
+    x = inputs
+
+    conv_layers = []
+    pooling_layers = []
+    for filters in encoder_filters:
+        conv = tf.keras.layers.Conv2D(filters, kernel, activation='relu', padding='same')(x)
+        conv = tf.keras.layers.Conv2D(filters, kernel, activation='relu', padding='same')(conv)
+        pool = tf.keras.layers.MaxPooling2D(pool_size)(conv)
+        conv_layers.append(conv)
+        pooling_layers.append(pool)
+        x = pool
+
+    bottleneck = tf.keras.layers.Conv2D(encoder_filters[-1], kernel,
+                                        activation='relu', padding='same')(pooling_layers[-1])
+    bottleneck = tf.keras.layers.Conv2D(encoder_filters[-1], kernel,
+                                        activation='relu', padding='same')(bottleneck)
+
+    for filters in reversed(decoder_filters):
+        up = tf.keras.layers.UpSampling2D(pool_size)(bottleneck)
+        concat = tf.keras.layers.Concatenate()([up, conv_layers.pop()])
+        conv = tf.keras.layers.Conv2D(filters, kernel, activation='relu', padding='same')(concat)
+        conv = tf.keras.layers.Conv2D(filters, kernel, activation='relu', padding='same')(conv)
+        bottleneck = conv
+
+    outputs = tf.keras.layers.Conv2D(num_classes, 1, activation='sigmoid')(bottleneck)
+    
+    QUI         QUI         QUI
+    outputs = tf.keras.layers.Reshape((-1,))(outputs)
+
+    model = tf.keras.Model(inputs=inputs, outputs=outputs)
+    return model
+
+aggiungendo la riga di codice :
+outputs = tf.keras.layers.Reshape((-1,))(outputs)
+
+mi da questo errore:
+
+---------------------------------------------------------------------------
+ValueError                                Traceback (most recent call last)
+<ipython-input-4-654064687c0a> in <cell line: 36>()
+     34 #val_masks = val_masks.reshape(val_masks.shape[0], -1)
+     35 
+---> 36 model.fit(train_images, train_masks, epochs=epoch, batch_size=batch_size,
+     37           callbacks=[early_stopping],class_weight = weights,
+     38           validation_data=(val_images, val_masks))
+
+1 frames
+/usr/local/lib/python3.10/dist-packages/keras/engine/data_adapter.py in _class_weights_map_fn(*data)
+   1622 
+   1623         if y.shape.rank > 2:
+-> 1624             raise ValueError(
+   1625                 "`class_weight` not supported for 3+ dimensional targets."
+   1626             )
+
+ValueError: `class_weight` not supported for 3+ dimensional targets.
+
+ed questo mi fa supporre che l'errore si riferisce allo shape delle immagini(con spettri)
+
+
+
