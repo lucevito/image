@@ -6,5 +6,5 @@ Librerie create:
 - test.py: per testare il modello.
 - dataset.py: per generare una dataset.
 - utility.py: funzioni non fondamentali.
-- 
+ 
 output/: Cartella in cui vengono salvati i risultati e gli output generati.
